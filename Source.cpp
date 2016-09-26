@@ -11,6 +11,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 {
 	static HWND hButton;
 	static HWND hTree;
+	static BOOL bChangeColor;
 	switch (msg)
 	{
 	case WM_CREATE:
@@ -39,11 +40,33 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT msg, WPARAM wParam, LPARAM lParam)
 		break;
 	case WM_SIZE:
 		MoveWindow(hTree, 10, 10, 256, 256, TRUE);
-		MoveWindow(hButton, 10, 256+20, 256, 32, TRUE);
+		MoveWindow(hButton, 10, 276, 256, 32, TRUE);
+		break;
+	case WM_NOTIFY:
+		{
+			LPNMHDR lpnmhdr = (LPNMHDR)lParam;
+			if (lpnmhdr->hwndFrom == hTree && bChangeColor) {
+				LPNMTREEVIEW lplv = (LPNMTREEVIEW)lParam;
+				if (lplv->hdr.code == NM_CUSTOMDRAW) {
+					LPNMTVCUSTOMDRAW lplvcd = (LPNMTVCUSTOMDRAW)lParam;
+					if (lplvcd->nmcd.dwDrawStage == CDDS_PREPAINT)
+						return CDRF_NOTIFYITEMDRAW;
+					if (lplvcd->nmcd.dwDrawStage == CDDS_ITEMPREPAINT) {
+						if (lplvcd->nmcd.uItemState & CDIS_SELECTED) {
+							// 選択項目の色を変更
+							lplvcd->clrTextBk = RGB(200, 200, 255);
+							lplvcd->clrText = RGB(0, 0, 0);
+							return CDRF_DODEFAULT;
+						}
+					}
+				}
+			}
+		}
 		break;
 	case WM_COMMAND:
 		if (LOWORD(wParam) == IDOK)
 		{
+			bChangeColor = TRUE;
 			// 背景色を変更
 			SendMessage(hTree, TVM_SETBKCOLOR, 0, RGB(0, 0, 64));
 			// 文字色を変更
